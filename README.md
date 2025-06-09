@@ -1,2 +1,2 @@
-# ta.jit.kinect2
+# jit.freenect2
 MaxMSP external to support Kinect v2

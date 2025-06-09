@@ -28,7 +28,7 @@
 
 
 // Our Jitter object instance data
-typedef struct _ta_jit_kinect2 {
+typedef struct _jit_freenect2 {
     t_object	ob;
     long depth_processor;
     
@@ -38,46 +38,46 @@ typedef struct _ta_jit_kinect2 {
     libfreenect2::SyncMultiFrameListener *listener; //TA: depth frame listener
     libfreenect2::FrameMap *frame_map; // TA: frame map (contains all frames: depth, rgb, etc...)
     t_bool isOpen;
-} t_ta_jit_kinect2;
+} t_jit_freenect2;
 
 
 // prototypes
 BEGIN_USING_C_LINKAGE
-t_jit_err		ta_jit_kinect2_init				(void);
-t_ta_jit_kinect2	*ta_jit_kinect2_new				(void);
-void			ta_jit_kinect2_free				(t_ta_jit_kinect2 *x);
-t_jit_err		ta_jit_kinect2_matrix_calc		(t_ta_jit_kinect2 *x, void *inputs, void *outputs);
+t_jit_err		jit_freenect2_init				(void);
+t_jit_freenect2	*jit_freenect2_new				(void);
+void			jit_freenect2_free				(t_jit_freenect2 *x);
+t_jit_err		jit_freenect2_matrix_calc		(t_jit_freenect2 *x, void *inputs, void *outputs);
 
-void ta_jit_kinect2_copy_depthdata(t_ta_jit_kinect2 *x, long dimcount, t_jit_matrix_info *out_minfo, char *bop);
-void ta_jit_kinect2_copy_rgbdata(t_ta_jit_kinect2 *x, long dimcount, t_jit_matrix_info *out_minfo, char *bop);
-void            ta_jit_kinect2_open(t_ta_jit_kinect2 *x);
-void            ta_jit_kinect2_close(t_ta_jit_kinect2 *x);
+void jit_freenect2_copy_depthdata(t_jit_freenect2 *x, long dimcount, t_jit_matrix_info *out_minfo, char *bop);
+void jit_freenect2_copy_rgbdata(t_jit_freenect2 *x, long dimcount, t_jit_matrix_info *out_minfo, char *bop);
+void            jit_freenect2_open(t_jit_freenect2 *x);
+void            jit_freenect2_close(t_jit_freenect2 *x);
 END_USING_C_LINKAGE
 
 
 // globals
-static void *s_ta_jit_kinect2_class = NULL;
+static void *s_jit_freenect2_class = NULL;
 
 
 /************************************************************************************/
 
-t_jit_err ta_jit_kinect2_init(void)
+t_jit_err jit_freenect2_init(void)
 {
     long			attrflags = JIT_ATTR_GET_DEFER_LOW | JIT_ATTR_SET_USURP_LOW;
     t_jit_object	*attr;
     t_jit_object	*mop;
 
     
-    s_ta_jit_kinect2_class = jit_class_new("ta_jit_kinect2", (method)ta_jit_kinect2_new, (method)ta_jit_kinect2_free, sizeof(t_ta_jit_kinect2), 0);
+    s_jit_freenect2_class = jit_class_new("jit_freenect2", (method)jit_freenect2_new, (method)jit_freenect2_free, sizeof(t_jit_freenect2), 0);
     
     // add matrix operator (mop)
     mop = (t_jit_object *)jit_object_new(_jit_sym_jit_mop, 0, 2); // args are  num inputs and num outputs
-    jit_class_addadornment(s_ta_jit_kinect2_class, mop);
+    jit_class_addadornment(s_jit_freenect2_class, mop);
     
     // add method(s)
-    jit_class_addmethod(s_ta_jit_kinect2_class, (method)ta_jit_kinect2_matrix_calc, "matrix_calc", A_CANT, 0);
-    jit_class_addmethod(s_ta_jit_kinect2_class, (method)ta_jit_kinect2_open, "open", 0);
-    jit_class_addmethod(s_ta_jit_kinect2_class, (method)ta_jit_kinect2_close, "close", 0);
+    jit_class_addmethod(s_jit_freenect2_class, (method)jit_freenect2_matrix_calc, "matrix_calc", A_CANT, 0);
+    jit_class_addmethod(s_jit_freenect2_class, (method)jit_freenect2_open, "open", 0);
+    jit_class_addmethod(s_jit_freenect2_class, (method)jit_freenect2_close, "close", 0);
     
     // add attribute(s)
     attr = (t_jit_object *)jit_object_new(_jit_sym_jit_attr_offset,
@@ -85,12 +85,12 @@ t_jit_err ta_jit_kinect2_init(void)
                                           _jit_sym_long,
                                           attrflags,
                                           (method)NULL, (method)NULL,
-                                          calcoffset(t_ta_jit_kinect2, depth_processor));
+                                          calcoffset(t_jit_freenect2, depth_processor));
     
-    jit_class_addattr(s_ta_jit_kinect2_class, attr);
+    jit_class_addattr(s_jit_freenect2_class, attr);
     
     // finalize class
-    jit_class_register(s_ta_jit_kinect2_class);
+    jit_class_register(s_jit_freenect2_class);
     return JIT_ERR_NONE;
 }
 
@@ -98,11 +98,11 @@ t_jit_err ta_jit_kinect2_init(void)
 /************************************************************************************/
 // Object Life Cycle
 
-t_ta_jit_kinect2 *ta_jit_kinect2_new(void)
+t_jit_freenect2 *jit_freenect2_new(void)
 {
-    t_ta_jit_kinect2	*x = NULL;
+    t_jit_freenect2	*x = NULL;
     
-    x = (t_ta_jit_kinect2 *)jit_object_alloc(s_ta_jit_kinect2_class);
+    x = (t_jit_freenect2 *)jit_object_alloc(s_jit_freenect2_class);
     // TA: initialize other data or structs
     if (x) {
         x->depth_processor = 2; //TA: default depth-processor is OpenCL
@@ -116,7 +116,7 @@ t_ta_jit_kinect2 *ta_jit_kinect2_new(void)
 }
 
 
-void ta_jit_kinect2_free(t_ta_jit_kinect2 *x)
+void jit_freenect2_free(t_jit_freenect2 *x)
 {
     post("closing device...");
     if (x->isOpen == false) {
@@ -138,7 +138,7 @@ void ta_jit_kinect2_free(t_ta_jit_kinect2 *x)
 // TA: METHODS BOUND TO KINECT
 
 //TA: open kinect device
-void ta_jit_kinect2_open(t_ta_jit_kinect2 *x){
+void jit_freenect2_open(t_jit_freenect2 *x){
 
     post("opening device...");
     
@@ -206,7 +206,7 @@ void ta_jit_kinect2_open(t_ta_jit_kinect2 *x){
     post("device is ready");
 }
 //TA: close kinect device
-void ta_jit_kinect2_close(t_ta_jit_kinect2 *x){
+void jit_freenect2_close(t_jit_freenect2 *x){
     post("closing device...");
     if (x->isOpen == false) {
         return; // quit close method if no device is open
@@ -224,7 +224,7 @@ void ta_jit_kinect2_close(t_ta_jit_kinect2 *x){
 /************************************************************************************/
 // Methods bound to input/inlets
 
-t_jit_err ta_jit_kinect2_matrix_calc(t_ta_jit_kinect2 *x, void *inputs, void *outputs)
+t_jit_err jit_freenect2_matrix_calc(t_jit_freenect2 *x, void *inputs, void *outputs)
 {
     t_jit_err			err = JIT_ERR_NONE;
     long				rgb_savelock;
@@ -262,8 +262,8 @@ t_jit_err ta_jit_kinect2_matrix_calc(t_ta_jit_kinect2 *x, void *inputs, void *ou
         if(x->isOpen){
             x->listener->waitForNewFrame(*x->frame_map);
             
-            ta_jit_kinect2_copy_rgbdata(x, rgb_minfo.dimcount, &rgb_minfo, rgb_bp);
-            ta_jit_kinect2_copy_depthdata(x, depth_minfo.dimcount, &depth_minfo, depth_bp);
+            jit_freenect2_copy_rgbdata(x, rgb_minfo.dimcount, &rgb_minfo, rgb_bp);
+            jit_freenect2_copy_depthdata(x, depth_minfo.dimcount, &depth_minfo, depth_bp);
 
             
             x->listener->release(*x->frame_map);
@@ -282,7 +282,7 @@ out:
 
 
 /*********************************RGB************************************************/
-void ta_jit_kinect2_looprgb(t_ta_jit_kinect2 *x, t_jit_op_info *out_opinfo, t_jit_matrix_info *out_minfo, char *bop)
+void jit_freenect2_looprgb(t_jit_freenect2 *x, t_jit_op_info *out_opinfo, t_jit_matrix_info *out_minfo, char *bop)
 {
     long xPos, yPos;
     
@@ -322,18 +322,18 @@ void ta_jit_kinect2_looprgb(t_ta_jit_kinect2 *x, t_jit_op_info *out_opinfo, t_ji
     }
 }
 
-void ta_jit_kinect2_copy_rgbdata(t_ta_jit_kinect2 *x, long dimcount, t_jit_matrix_info *out_minfo, char *bop)
+void jit_freenect2_copy_rgbdata(t_jit_freenect2 *x, long dimcount, t_jit_matrix_info *out_minfo, char *bop)
 {
     t_jit_op_info	out_opinfo;
     
     if (dimcount < 1)
         return; // safety
     //else:
-    ta_jit_kinect2_looprgb(x, &out_opinfo, out_minfo, bop);
+    jit_freenect2_looprgb(x, &out_opinfo, out_minfo, bop);
 }
 
 /********************************DEPTH***********************************************/
-void ta_jit_kinect2_loopdepth(t_ta_jit_kinect2 *x, t_jit_op_info *out_opinfo, t_jit_matrix_info *out_minfo, char *bop)
+void jit_freenect2_loopdepth(t_jit_freenect2 *x, t_jit_op_info *out_opinfo, t_jit_matrix_info *out_minfo, char *bop)
 {
     long xPos, yPos;
     
@@ -356,13 +356,13 @@ void ta_jit_kinect2_loopdepth(t_ta_jit_kinect2 *x, t_jit_op_info *out_opinfo, t_
 }
 
 
-void ta_jit_kinect2_copy_depthdata(t_ta_jit_kinect2 *x, long dimcount, t_jit_matrix_info *out_minfo, char *bop)
+void jit_freenect2_copy_depthdata(t_jit_freenect2 *x, long dimcount, t_jit_matrix_info *out_minfo, char *bop)
 {
     t_jit_op_info	out_opinfo;
     
     if (dimcount < 1)
         return; // safety
     // else:
-    ta_jit_kinect2_loopdepth(x, &out_opinfo, out_minfo, bop);
+    jit_freenect2_loopdepth(x, &out_opinfo, out_minfo, bop);
 }
 
