@@ -1,0 +1,6 @@
+[submodule "source/max-sdk-base"]
+	path = source/max-sdk-base
+	url = https://github.com/Cycling74/max-sdk-base.git
+[submodule "source/libfreenect2"]
+	path = source/libfreenect2
+	url = https://github.com/aidanbyrnes/libfreenect2.git
