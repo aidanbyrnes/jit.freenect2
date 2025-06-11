@@ -14,10 +14,10 @@
 // Libfreenect2 includes
 #include <iostream>
 //#include <signal.h>
-#include <libfreenect2.hpp>
-#include <frame_listener_impl.h>
-#include <registration.h>
-#include <packet_pipeline.h>
+#include <libfreenect2/libfreenect2.hpp>
+#include <libfreenect2/frame_listener_impl.h>
+#include <libfreenect2/registration.h>
+#include <libfreenect2/packet_pipeline.h>
 //#include <logger.h>
 
 // matrix dimensions
@@ -32,7 +32,7 @@ typedef struct _jit_freenect2 {
     t_object	ob;
     long depth_processor;
     
-    libfreenect2::Freenect2 freenect2;
+    //libfreenect2::Freenect2 freenect2;
     libfreenect2::Freenect2Device *device; // TA: declare freenect2 device
     libfreenect2::PacketPipeline *pipeline; // TA: declare packet pipeline
     libfreenect2::SyncMultiFrameListener *listener; //TA: depth frame listener
@@ -57,7 +57,7 @@ END_USING_C_LINKAGE
 
 // globals
 static void *s_jit_freenect2_class = NULL;
-
+libfreenect2::Freenect2 freenect2;
 
 /************************************************************************************/
 
@@ -106,7 +106,7 @@ t_jit_freenect2 *jit_freenect2_new(void)
     // TA: initialize other data or structs
     if (x) {
         x->depth_processor = 2; //TA: default depth-processor is OpenCL
-        x->freenect2 = *new libfreenect2::Freenect2();
+        //x->freenect2 = *new libfreenect2::Freenect2();
         x->device = 0; //TA: init device
         x->pipeline = 0; //TA: init pipeline
         x->isOpen = false;
@@ -148,7 +148,7 @@ void jit_freenect2_open(t_jit_freenect2 *x){
         return;
     }
     // TA: check for connected devices
-    if (x->freenect2.enumerateDevices() == 0) {
+    if (/*x->*/freenect2.enumerateDevices() == 0) {
         post("no device connected!");
         return; // TA: exit "open" method if no device is connected
     }
@@ -185,7 +185,7 @@ void jit_freenect2_open(t_jit_freenect2 *x){
         }
     }
     if(x->pipeline){
-        x->device = x->freenect2.openDefaultDevice();
+        x->device = /*x->*/freenect2.openDefaultDevice();
     }
     if(x->device == 0){
         post("failed to open device!!!");

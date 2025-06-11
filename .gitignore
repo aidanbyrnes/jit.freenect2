@@ -1,6 +1,7 @@
-_ref/**
-source/ta.jit.kinect2/DerivedData/**
-debugger/**
+externals
+support
+source/libfreenect2/build/
+build/
 *.pbxuser
 *.mode1v3
 *.mode2v3
