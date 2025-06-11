@@ -89,7 +89,7 @@ void *max_jit_freenect2_new(t_symbol *s, long argc, t_atom *argv)
             void *output = max_jit_mop_getoutput(x, 1);
             jit_attr_setsym(output, _jit_sym_type, _jit_sym_float32);
             jit_attr_setlong_array(output, _jit_sym_dim, 2, depthdim);
-            jit_attr_setlong(output, _jit_sym_planecount, 1);
+            jit_attr_setlong(output, _jit_sym_planecount, 3); //AB: matrix should now be 3 planes (x, y, & z)
             
             //TA: set rgb matrix initial attributes
             output = max_jit_mop_getoutput(x, 2);

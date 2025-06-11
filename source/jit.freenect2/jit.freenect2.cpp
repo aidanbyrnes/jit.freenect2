@@ -33,6 +33,7 @@ typedef struct _jit_freenect2 {
     long depth_processor;
     
     //libfreenect2::Freenect2 freenect2;
+    libfreenect2::Registration *registration; // AB: declare registration
     libfreenect2::Freenect2Device *device; // TA: declare freenect2 device
     libfreenect2::PacketPipeline *pipeline; // TA: declare packet pipeline
     libfreenect2::SyncMultiFrameListener *listener; //TA: depth frame listener
@@ -58,6 +59,7 @@ END_USING_C_LINKAGE
 // globals
 static void *s_jit_freenect2_class = NULL;
 libfreenect2::Freenect2 freenect2; //AB: instances of freenect2 are no longer copyable. Made global for now
+libfreenect2::Frame undistorted(DEPTH_WIDTH, DEPTH_HEIGHT, 4); //AB: 
 
 /************************************************************************************/
 
@@ -197,6 +199,12 @@ void jit_freenect2_open(t_jit_freenect2 *x){
     x->frame_map = new libfreenect2::FrameMap[libfreenect2::Frame::Type::Color|libfreenect2::Frame::Type::Depth];
     x->device->start();
     
+    //AB: init registration with device params
+    x->registration = new libfreenect2::Registration(
+        x->device->getIrCameraParams(),
+        x->device->getColorCameraParams()
+    );
+    
     x->isOpen = true;
     
     post("device is ready");
@@ -255,7 +263,7 @@ t_jit_err jit_freenect2_matrix_calc(t_jit_freenect2 *x, void *inputs, void *outp
         }
         
         /************************************************************************************/
-        if(x->isOpen){
+        if(x->isOpen && x->listener->hasNewFrame()){
             x->listener->waitForNewFrame(*x->frame_map);
             
             jit_freenect2_copy_rgbdata(x, rgb_minfo.dimcount, &rgb_minfo, rgb_bp);
@@ -331,22 +339,33 @@ void jit_freenect2_copy_rgbdata(t_jit_freenect2 *x, long dimcount, t_jit_matrix_
 /********************************DEPTH***********************************************/
 void jit_freenect2_loopdepth(t_jit_freenect2 *x, t_jit_op_info *out_opinfo, t_jit_matrix_info *out_minfo, char *bop)
 {
-    long xPos, yPos;
+    int xPos, yPos;
     
     libfreenect2::Frame *depth_frame = (*x->frame_map)[libfreenect2::Frame::Depth];
     
-    float *frame_data = (float *)depth_frame->data;
+    //AB: Undistort the depth frame first
+    x->registration->undistortDepth(depth_frame, &undistorted);
+    
+    float *undistorted_data = (float *)undistorted.data;
     out_opinfo->p = bop;
-    float *op;
-    op = (float *)out_opinfo->p;
-    float value;
+    float *op = (float *)out_opinfo->p;
+    
+    float x_coord, y_coord, z_coord;
     
     for(yPos = 0; yPos < DEPTH_HEIGHT; yPos++){
-        for(xPos = 0; xPos < DEPTH_WIDTH; xPos++){
-            value = *frame_data;
-            *op = value;
+        for(xPos = DEPTH_WIDTH - 1; xPos >= 0; xPos--){
+            
+            //AB: Use getPointXYZ to get real world coordinates in meters
+            x->registration->getPointXYZ(&undistorted, yPos, xPos, x_coord, y_coord, z_coord);
+            
+            *op = -x_coord;
             op++;
-            frame_data++;
+            
+            *op = -y_coord;
+            op++;
+            
+            *op = -z_coord;
+            op++;
         }
     }
 }
