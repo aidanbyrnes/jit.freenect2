@@ -57,7 +57,7 @@ END_USING_C_LINKAGE
 
 // globals
 static void *s_jit_freenect2_class = NULL;
-libfreenect2::Freenect2 freenect2;
+libfreenect2::Freenect2 freenect2; //AB: instances of freenect2 are no longer copyable. Made global for now
 
 /************************************************************************************/
 
@@ -105,7 +105,7 @@ t_jit_freenect2 *jit_freenect2_new(void)
     x = (t_jit_freenect2 *)jit_object_alloc(s_jit_freenect2_class);
     // TA: initialize other data or structs
     if (x) {
-        x->depth_processor = 2; //TA: default depth-processor is OpenCL
+        x->depth_processor = 1; //AB: change default pipeline to OpenGL
         //x->freenect2 = *new libfreenect2::Freenect2();
         x->device = 0; //TA: init device
         x->pipeline = 0; //TA: init pipeline
@@ -161,12 +161,8 @@ void jit_freenect2_open(t_jit_freenect2 *x){
                 break;
                 
             case 1:
-                //                x->pipeline = new libfreenect2::OpenGLPacketPipeline();
-                // TA: DAMN!!!!! OpenGL not found!!!!!!
-//                post("using OpenGL packet pipeline...");
-
-                
-                post("OpenGL packet pipeline not available for the moment!!!");
+                x->pipeline = new libfreenect2::OpenGLPacketPipeline();
+                post("using OpenGL packet pipeline...");
                 break;
                 
             case 2:
