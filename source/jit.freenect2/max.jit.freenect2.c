@@ -13,12 +13,12 @@
 #include "max.jit.mop.h"
 
 // matrix dimensions
-#define RGB_WIDTH 1920
-#define RGB_HEIGHT 1080
+//#define RGB_WIDTH 1920 //AB: remove RGB dim for now. Using registered RGB frames which use depth dim
+//#define RGB_HEIGHT 1080
 #define DEPTH_WIDTH 512
 #define DEPTH_HEIGHT 424
 
-
+#define JIT_ERR_NO_NEW_FRAMES 0x7000
 
 // Max object instance data
 // Note: most instance data is in the Jitter object which we will wrap
@@ -83,7 +83,7 @@ void *max_jit_freenect2_new(t_symbol *s, long argc, t_atom *argv)
             max_jit_mop_setup_simple(x, o, argc, argv);
             max_jit_attr_args(x, argc, argv);
             t_atom_long depthdim[2] = {DEPTH_WIDTH, DEPTH_HEIGHT};
-            t_atom_long rgbdim[2] = {RGB_WIDTH, RGB_HEIGHT};
+            t_atom_long rgbdim[2] = {DEPTH_WIDTH, DEPTH_HEIGHT}; //AB: set rgb dim to depth dim since rgb will be registered to depth
             
             //TA: set depth matrix initial attributes
             void *output = max_jit_mop_getoutput(x, 1);
@@ -119,16 +119,26 @@ void max_jit_freenect2_free(t_max_jit_freenect2 *x)
 
 void max_jit_freenect2_outputmatrix(t_max_jit_freenect2 *x)
 {
-    void *mop=max_jit_obex_adornment_get(x,_jit_sym_jit_mop);
+    void *mop = max_jit_obex_adornment_get(x, _jit_sym_jit_mop);
+    void *jitob = max_jit_obex_jitob_get(x);
     t_jit_err err;
     
-    if (mop) { //always output
-        if (err=(t_jit_err)jit_object_method(max_jit_obex_jitob_get(x),
+    if (mop && jitob) {
+        // Check if there are new frames available before processing
+        t_jit_err has_frames = (t_jit_err)jit_object_method(jitob, gensym("has_new_frames"));
+        
+        if (has_frames != JIT_ERR_NONE) {
+            // No new frames available, exit early
+            return;
+        }
+        
+        // Proceed with matrix calculation since we have new frames
+        if (err = (t_jit_err)jit_object_method(jitob,
                                              _jit_sym_matrix_calc,
-                                             jit_object_method(mop,_jit_sym_getinputlist),
-                                             jit_object_method(mop,_jit_sym_getoutputlist)))
+                                             jit_object_method(mop, _jit_sym_getinputlist),
+                                             jit_object_method(mop, _jit_sym_getoutputlist)))
         {
-            jit_error_code(x,err);
+            jit_error_code(x, err);
         }
         else {
             max_jit_mop_outputmatrix(x);

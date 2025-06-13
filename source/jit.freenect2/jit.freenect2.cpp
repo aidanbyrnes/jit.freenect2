@@ -10,35 +10,35 @@
  */
 
 #include "jit.common.h"
-
-// Libfreenect2 includes
+#include "kinect_wrapper.h"
 #include <iostream>
-//#include <signal.h>
-#include <libfreenect2/libfreenect2.hpp>
-#include <libfreenect2/frame_listener_impl.h>
-#include <libfreenect2/registration.h>
-#include <libfreenect2/packet_pipeline.h>
-//#include <logger.h>
 
 // matrix dimensions
-#define RGB_WIDTH 1920
-#define RGB_HEIGHT 1080
+//#define RGB_WIDTH 1920 //AB: remove RGB dim for now. Using registered RGB frames which use depth dim
+//#define RGB_HEIGHT 1080
 #define DEPTH_WIDTH 512
 #define DEPTH_HEIGHT 424
 
 
 // Our Jitter object instance data
 typedef struct _jit_freenect2 {
-    t_object	ob;
+    t_object ob;
     long depth_processor;
-    
-    //libfreenect2::Freenect2 freenect2;
+
+    kinect_wrapper *kinect;
+
+    /*
+     
+     AB: all of this now exists in the kinect_wrapper class
+     
+    libfreenect2::Freenect2 freenect2;
     libfreenect2::Registration *registration; // AB: declare registration
     libfreenect2::Freenect2Device *device; // TA: declare freenect2 device
     libfreenect2::PacketPipeline *pipeline; // TA: declare packet pipeline
     libfreenect2::SyncMultiFrameListener *listener; //TA: depth frame listener
     libfreenect2::FrameMap *frame_map; // TA: frame map (contains all frames: depth, rgb, etc...)
     t_bool isOpen;
+    */
 } t_jit_freenect2;
 
 
@@ -47,6 +47,7 @@ BEGIN_USING_C_LINKAGE
 t_jit_err		jit_freenect2_init				(void);
 t_jit_freenect2	*jit_freenect2_new				(void);
 void			jit_freenect2_free				(t_jit_freenect2 *x);
+t_jit_err       jit_freenect2_has_new_frames    (t_jit_freenect2 *x);
 t_jit_err		jit_freenect2_matrix_calc		(t_jit_freenect2 *x, void *inputs, void *outputs);
 
 void jit_freenect2_copy_depthdata(t_jit_freenect2 *x, long dimcount, t_jit_matrix_info *out_minfo, char *bop);
@@ -58,8 +59,6 @@ END_USING_C_LINKAGE
 
 // globals
 static void *s_jit_freenect2_class = NULL;
-libfreenect2::Freenect2 freenect2; //AB: instances of freenect2 are no longer copyable. Made global for now
-libfreenect2::Frame undistorted(DEPTH_WIDTH, DEPTH_HEIGHT, 4); //AB: 
 
 /************************************************************************************/
 
@@ -80,6 +79,7 @@ t_jit_err jit_freenect2_init(void)
     jit_class_addmethod(s_jit_freenect2_class, (method)jit_freenect2_matrix_calc, "matrix_calc", A_CANT, 0);
     jit_class_addmethod(s_jit_freenect2_class, (method)jit_freenect2_open, "open", 0);
     jit_class_addmethod(s_jit_freenect2_class, (method)jit_freenect2_close, "close", 0);
+    jit_class_addmethod(s_jit_freenect2_class, (method)jit_freenect2_has_new_frames, "has_new_frames", A_CANT, 0);
     
     // add attribute(s)
     attr = (t_jit_object *)jit_object_new(_jit_sym_jit_attr_offset,
@@ -109,9 +109,10 @@ t_jit_freenect2 *jit_freenect2_new(void)
     if (x) {
         x->depth_processor = 1; //AB: change default pipeline to OpenGL
         //x->freenect2 = *new libfreenect2::Freenect2();
-        x->device = 0; //TA: init device
+        /*x->device = 0; //TA: init device
         x->pipeline = 0; //TA: init pipeline
-        x->isOpen = false;
+        x->isOpen = false;*/
+        x->kinect = new kinect_wrapper();
     }
     
     return x;
@@ -121,19 +122,22 @@ t_jit_freenect2 *jit_freenect2_new(void)
 void jit_freenect2_free(t_jit_freenect2 *x)
 {
     post("closing device...");
-    if (x->isOpen == false) {
+    if (x->kinect->isOpen == false) {
         return; // quit close method if no device is open
     }
-    x->device->stop();
+    
+    x->kinect->close();
+    x->kinect->release();
+    
+    delete x->kinect;
+    /*x->device->stop();
     x->device->close();
     
     x->listener->release(*x->frame_map);
     x->listener = NULL;
     x->frame_map = NULL;
     x->device = NULL;
-    x->pipeline = NULL;
-    
-;
+    x->pipeline = NULL;*/
 }
 
 /************************************************************************************/
@@ -141,90 +145,40 @@ void jit_freenect2_free(t_jit_freenect2 *x)
 
 //TA: open kinect device
 void jit_freenect2_open(t_jit_freenect2 *x){
-
-    post("opening device...");
-    
-    // TA: exit "open" method if a device is already open
-    if (x->isOpen == true) {
-        post("device already opened");
+    if(x->kinect->isOpen){
+        post("Device already open");
         return;
     }
-    // TA: check for connected devices
-    if (/*x->*/freenect2.enumerateDevices() == 0) {
-        post("no device connected!");
-        return; // TA: exit "open" method if no device is connected
-    }
-    
-    if(!x->pipeline){
-        switch (x->depth_processor) {
-            case 0:
-                x->pipeline = new libfreenect2::CpuPacketPipeline();
-                post("using CPU packet pipeline...");
-                break;
-                
-            case 1:
-                x->pipeline = new libfreenect2::OpenGLPacketPipeline();
-                post("using OpenGL packet pipeline...");
-                break;
-                
-            case 2:
-                x->pipeline = new libfreenect2::OpenCLPacketPipeline();
-                post("using OpenCL packet pipeline...");
-                break;
-                
-            default:
-                post("wrong attribute value");
-                post("values for depth processor are:");
-                post("0 - CPU");
-                post("1 - OpenGL");
-                post("2 - OpenCL");
-                post("please set a correct value and open device again");
-                return; // TA: exit "open" method if no depth_processor is selected
-        }
-    }
-    if(x->pipeline){
-        x->device = /*x->*/freenect2.openDefaultDevice();
-    }
-    if(x->device == 0){
-        post("failed to open device!!!");
-        return;
-    }
-    post("default Kinect device is now open !");
 
-    
-    // TA: start device
-    x->listener = new libfreenect2::SyncMultiFrameListener(libfreenect2::Frame::Color|libfreenect2::Frame::Depth);
-    x->device->setColorFrameListener(x->listener);
-    x->device->setIrAndDepthFrameListener(x->listener);
-    x->frame_map = new libfreenect2::FrameMap[libfreenect2::Frame::Type::Color|libfreenect2::Frame::Type::Depth];
-    x->device->start();
-    
-    //AB: init registration with device params
-    x->registration = new libfreenect2::Registration(
-        x->device->getIrCameraParams(),
-        x->device->getColorCameraParams()
-    );
-    
-    x->isOpen = true;
-    
-    post("device is ready");
+    x->kinect->open(x->depth_processor);
 }
+
 //TA: close kinect device
 void jit_freenect2_close(t_jit_freenect2 *x){
     post("closing device...");
-    if (x->isOpen == false) {
+    if (x->kinect->isOpen == false) {
         return; // quit close method if no device is open
     }
-    x->device->stop();
-    x->device->close();
     
-    x->listener->release(*x->frame_map);
-    x->listener = NULL;
-    x->device = 0; //TA: init device
-    x->pipeline = 0; //TA: init pipeline
-    x->isOpen = false;
+    x->kinect->close();
+    //x->kinect->release();
+    
     post("device closed");
 }
+
+t_jit_err jit_freenect2_has_new_frames(t_jit_freenect2 *x)
+{
+    if (!x || !x->kinect || !x->kinect->isOpen) {
+        return JIT_ERR_GENERIC; // No device or not open
+    }
+    
+    if (x->kinect->hasNewFrames()) {
+        return JIT_ERR_NONE; // Has new frames
+    }
+    
+    return JIT_ERR_GENERIC; // No new frames
+}
+
 /************************************************************************************/
 // Methods bound to input/inlets
 
@@ -239,6 +193,11 @@ t_jit_err jit_freenect2_matrix_calc(t_jit_freenect2 *x, void *inputs, void *outp
     char				*depth_bp;
     void				*rgb_matrix;
     void				*depth_matrix;
+    
+    // Early exit if device is not open or no new frames available
+    if (!x->kinect->isOpen || !x->kinect->hasNewFrames()) {
+        return JIT_ERR_NONE; // Return success but don't process matrices
+    }
     
     rgb_matrix 	= jit_object_method(outputs,_jit_sym_getindex,1);
     depth_matrix = jit_object_method(outputs,_jit_sym_getindex,0);
@@ -263,15 +222,15 @@ t_jit_err jit_freenect2_matrix_calc(t_jit_freenect2 *x, void *inputs, void *outp
         }
         
         /************************************************************************************/
-        if(x->isOpen && x->listener->hasNewFrame()){
-            x->listener->waitForNewFrame(*x->frame_map);
-            
-            jit_freenect2_copy_rgbdata(x, rgb_minfo.dimcount, &rgb_minfo, rgb_bp);
-            jit_freenect2_copy_depthdata(x, depth_minfo.dimcount, &depth_minfo, depth_bp);
+        x->kinect->getframes();
+        //AB: register here to get both the RGB and depth frames
+        x->kinect->registerFrames();
+        
+        jit_freenect2_copy_rgbdata(x, rgb_minfo.dimcount, &rgb_minfo, rgb_bp);
+        jit_freenect2_copy_depthdata(x, depth_minfo.dimcount, &depth_minfo, depth_bp);
 
-            
-            x->listener->release(*x->frame_map);
-        }
+        x->kinect->release();
+        //x->listener->release(*x->frame_map);
         /************************************************************************************/
         
     }
@@ -289,39 +248,37 @@ out:
 void jit_freenect2_looprgb(t_jit_freenect2 *x, t_jit_op_info *out_opinfo, t_jit_matrix_info *out_minfo, char *bop)
 {
     long xPos, yPos;
-    
-    libfreenect2::Frame *rgb_frame = (*x->frame_map)[libfreenect2::Frame::Color];
-    
-    char *frame_data = (char *)rgb_frame->data;
+        
+    // Correctly access the frame data as unsigned char pointer
+    unsigned char *frame_data = (unsigned char *)x->kinect->registered.data;
     out_opinfo->p = bop;
-    char *op;
-    op = (char *)out_opinfo->p;
-    char *aPos;
+    unsigned char *op = (unsigned char *)out_opinfo->p;
+    unsigned char *aPos;
     
-    for(yPos = 0; yPos < RGB_HEIGHT; yPos++){
-        for(xPos = 0; xPos < RGB_WIDTH; xPos++){
-            aPos = frame_data + 3;
+    for(yPos = 0; yPos < DEPTH_HEIGHT; yPos++){
+        for(xPos = 0; xPos < DEPTH_WIDTH; xPos++){
             
+            // Flip horizontally
+            long flipped_x = DEPTH_WIDTH - 1 - xPos;
+            unsigned char *source_pixel = frame_data + (yPos * DEPTH_WIDTH + flipped_x) * 4;
+            aPos = source_pixel + 3;
+                        
             //TA: alpha
             *op = *aPos;
             op++;
             aPos--;
-            frame_data++;
             //TA: red
             *op = *aPos;
             op++;
             aPos--;
-            frame_data++;
             //TA: green
             *op = *aPos;
             op++;
             aPos--;
-            frame_data++;
             //TA: blue
             *op = *aPos;
             op++;
             aPos--;
-            frame_data++;
         }
     }
 }
@@ -341,12 +298,6 @@ void jit_freenect2_loopdepth(t_jit_freenect2 *x, t_jit_op_info *out_opinfo, t_ji
 {
     int xPos, yPos;
     
-    libfreenect2::Frame *depth_frame = (*x->frame_map)[libfreenect2::Frame::Depth];
-    
-    //AB: Undistort the depth frame first
-    x->registration->undistortDepth(depth_frame, &undistorted);
-    
-    float *undistorted_data = (float *)undistorted.data;
     out_opinfo->p = bop;
     float *op = (float *)out_opinfo->p;
     
@@ -355,8 +306,8 @@ void jit_freenect2_loopdepth(t_jit_freenect2 *x, t_jit_op_info *out_opinfo, t_ji
     for(yPos = 0; yPos < DEPTH_HEIGHT; yPos++){
         for(xPos = DEPTH_WIDTH - 1; xPos >= 0; xPos--){
             
-            //AB: Use getPointXYZ to get real world coordinates in meters
-            x->registration->getPointXYZ(&undistorted, yPos, xPos, x_coord, y_coord, z_coord);
+            //AB: get 3D point from depth
+            x->kinect->getPoint3D(yPos, xPos, x_coord, y_coord, z_coord);
             
             *op = -x_coord;
             op++;
