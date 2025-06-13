@@ -47,7 +47,6 @@ BEGIN_USING_C_LINKAGE
 t_jit_err		jit_freenect2_init				(void);
 t_jit_freenect2	*jit_freenect2_new				(void);
 void			jit_freenect2_free				(t_jit_freenect2 *x);
-t_jit_err       jit_freenect2_has_new_frames    (t_jit_freenect2 *x);
 t_jit_err		jit_freenect2_matrix_calc		(t_jit_freenect2 *x, void *inputs, void *outputs);
 
 void jit_freenect2_copy_depthdata(t_jit_freenect2 *x, long dimcount, t_jit_matrix_info *out_minfo, char *bop);
@@ -79,7 +78,6 @@ t_jit_err jit_freenect2_init(void)
     jit_class_addmethod(s_jit_freenect2_class, (method)jit_freenect2_matrix_calc, "matrix_calc", A_CANT, 0);
     jit_class_addmethod(s_jit_freenect2_class, (method)jit_freenect2_open, "open", 0);
     jit_class_addmethod(s_jit_freenect2_class, (method)jit_freenect2_close, "close", 0);
-    jit_class_addmethod(s_jit_freenect2_class, (method)jit_freenect2_has_new_frames, "has_new_frames", A_CANT, 0);
     
     // add attribute(s)
     attr = (t_jit_object *)jit_object_new(_jit_sym_jit_attr_offset,
@@ -164,19 +162,6 @@ void jit_freenect2_close(t_jit_freenect2 *x){
     //x->kinect->release();
     
     post("device closed");
-}
-
-t_jit_err jit_freenect2_has_new_frames(t_jit_freenect2 *x)
-{
-    if (!x || !x->kinect || !x->kinect->isOpen) {
-        return JIT_ERR_GENERIC; // No device or not open
-    }
-    
-    if (x->kinect->hasNewFrames()) {
-        return JIT_ERR_NONE; // Has new frames
-    }
-    
-    return JIT_ERR_GENERIC; // No new frames
 }
 
 /************************************************************************************/

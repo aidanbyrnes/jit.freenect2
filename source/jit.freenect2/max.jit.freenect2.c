@@ -18,7 +18,7 @@
 #define DEPTH_WIDTH 512
 #define DEPTH_HEIGHT 424
 
-#define JIT_ERR_NO_NEW_FRAMES 0x7000
+
 
 // Max object instance data
 // Note: most instance data is in the Jitter object which we will wrap
@@ -119,26 +119,16 @@ void max_jit_freenect2_free(t_max_jit_freenect2 *x)
 
 void max_jit_freenect2_outputmatrix(t_max_jit_freenect2 *x)
 {
-    void *mop = max_jit_obex_adornment_get(x, _jit_sym_jit_mop);
-    void *jitob = max_jit_obex_jitob_get(x);
+    void *mop=max_jit_obex_adornment_get(x,_jit_sym_jit_mop);
     t_jit_err err;
     
-    if (mop && jitob) {
-        // Check if there are new frames available before processing
-        t_jit_err has_frames = (t_jit_err)jit_object_method(jitob, gensym("has_new_frames"));
-        
-        if (has_frames != JIT_ERR_NONE) {
-            // No new frames available, exit early
-            return;
-        }
-        
-        // Proceed with matrix calculation since we have new frames
-        if (err = (t_jit_err)jit_object_method(jitob,
+    if (mop) { //always output
+        if (err=(t_jit_err)jit_object_method(max_jit_obex_jitob_get(x),
                                              _jit_sym_matrix_calc,
-                                             jit_object_method(mop, _jit_sym_getinputlist),
-                                             jit_object_method(mop, _jit_sym_getoutputlist)))
+                                             jit_object_method(mop,_jit_sym_getinputlist),
+                                             jit_object_method(mop,_jit_sym_getoutputlist)))
         {
-            jit_error_code(x, err);
+            jit_error_code(x,err);
         }
         else {
             max_jit_mop_outputmatrix(x);
