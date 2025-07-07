@@ -7,6 +7,7 @@ Based on [ta.jit.kinect2](https://github.com/Digitopia/ta.jit.kinect2) by Tiago 
 
 ### macOS / Xcode
 
+* Have a package manager installed. Homebrew is used below. 
 * Make sure the following are available: wget, git, cmake, pkg-config
 * Download source
     ```
