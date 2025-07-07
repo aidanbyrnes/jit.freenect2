@@ -1,10 +1,3 @@
-//
-//  kinect_wrapper.h
-//  jit.freenect2
-//
-//  Created by Aidan Byrnes on 6/12/25.
-//
-
 #include <iostream>
 
 #include <libfreenect2/libfreenect2.hpp>
@@ -12,23 +5,38 @@
 #include <libfreenect2/registration.h>
 #include <libfreenect2/packet_pipeline.h>
 
+#ifndef __KINECT_WRAPPER_H__
+#define __KINECT_WRAPPER_H__
+
 enum FRAMETYPE {
     Color = libfreenect2::Frame::Color,
     Depth = libfreenect2::Frame::Depth
 };
 
+class CustomFrameListener : public libfreenect2::SyncMultiFrameListener
+{
+public:
+    CustomFrameListener(unsigned int frame_types);
+    virtual ~CustomFrameListener();
+    
+    // Set a callback function to be called on new frames
+    void setCallback(void (*callback)(void*), void* user_data);
+    
+    // Override onNewFrame to trigger callback
+    virtual bool onNewFrame(libfreenect2::Frame::Type type, libfreenect2::Frame* frame) override;
+    
+private:
+    void (*callback_function)(void*);
+    void* callback_user_data;
+};
+
 class kinect_wrapper {
 public:
+    kinect_wrapper();
+    ~kinect_wrapper();
     
     bool isOpen = false;
     
-    libfreenect2::Freenect2 freenect2;
-    libfreenect2::Freenect2Device *device;
-    libfreenect2::PacketPipeline *pipeline;
-    libfreenect2::Registration *registration;
-    
-    libfreenect2::SyncMultiFrameListener listener = libfreenect2::SyncMultiFrameListener(libfreenect2::Frame::Color | libfreenect2::Frame::Depth);
-    libfreenect2::FrameMap frames;
     libfreenect2::Frame undistorted = libfreenect2::Frame(512, 424, 4);
     libfreenect2::Frame registered = libfreenect2::Frame(512, 424, 4);
     
@@ -41,4 +49,15 @@ public:
     void release();
     void close();
     
+    void setFrameCallback(void (*callback)(void*), void* user_data);
+    
+private:
+    libfreenect2::Freenect2 freenect2;
+    libfreenect2::Freenect2Device *device;
+    libfreenect2::PacketPipeline *pipeline;
+    libfreenect2::Registration *registration;
+    CustomFrameListener listener;
+    libfreenect2::FrameMap frames;
 };
+
+#endif /*__KINECT_WRAPPER_H__*/

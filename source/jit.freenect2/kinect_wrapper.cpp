@@ -1,14 +1,50 @@
-//
-//  kinect_wrapper.cpp
-//  jit.freenect2
-//
-//  Created by Aidan Byrnes on 6/12/25.
-//
-
-#include <iostream>
 #include "jit.common.h"
-
 #include "kinect_wrapper.h"
+
+CustomFrameListener::CustomFrameListener(unsigned int frame_types)
+    : libfreenect2::SyncMultiFrameListener(frame_types), callback_function(nullptr), callback_user_data(nullptr)
+{
+}
+
+CustomFrameListener::~CustomFrameListener()
+{
+}
+
+void CustomFrameListener::setCallback(void (*callback)(void*), void* user_data)
+{
+    callback_function = callback;
+    callback_user_data = user_data;
+}
+
+bool CustomFrameListener::onNewFrame(libfreenect2::Frame::Type type, libfreenect2::Frame* frame)
+{
+    // Call parent implementation first
+    bool result = libfreenect2::SyncMultiFrameListener::onNewFrame(type, frame);
+    
+    // If we have both color and depth frames available and a callback is set, trigger it
+    if (callback_function && callback_user_data && hasNewFrame()) {
+        callback_function(callback_user_data);
+    }
+    
+    return result;
+}
+
+kinect_wrapper::kinect_wrapper() : listener(libfreenect2::Frame::Color | libfreenect2::Frame::Depth){
+    device = nullptr;
+    pipeline = nullptr;
+    registration = nullptr;
+    isOpen = false;
+}
+
+kinect_wrapper::~kinect_wrapper()
+{
+    close();
+}
+
+void kinect_wrapper::setFrameCallback(void (*callback)(void*), void* user_data)
+{
+    listener.setCallback(callback, user_data);
+}
 
 bool kinect_wrapper::open(long depth_pipeline=0)
 {
@@ -54,11 +90,8 @@ bool kinect_wrapper::open(long depth_pipeline=0)
     }
     
     registration = new libfreenect2::Registration(device->getIrCameraParams(), device->getColorCameraParams());
-    
     isOpen = true;
-    
     post("Device is ready");
-    
     return isOpen;
 }
 
@@ -76,10 +109,8 @@ libfreenect2::Frame* kinect_wrapper::frame(FRAMETYPE type) {
     {
         case Color:
             return frames[libfreenect2::Frame::Color];
-            break;
         case Depth:
             return frames[libfreenect2::Frame::Depth];
-            break;
     }
 }
 
@@ -96,11 +127,17 @@ void kinect_wrapper::release() {
 }
 
 void kinect_wrapper::close() {
+    setFrameCallback(nullptr, nullptr);
+    
     if (isOpen)
     {
         device->stop();
         device->close();
+        isOpen = false;
     }
     
-    delete registration;
+    if (registration) {
+        delete registration;
+        registration = nullptr;
+    }
 }
