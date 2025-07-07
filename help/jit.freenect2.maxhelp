@@ -36,26 +36,14 @@
 						"showontab" : 1,
 						"boxes" : [ 							{
 								"box" : 								{
-									"id" : "obj-10",
-									"items" : [ "CPU", ",", "OpenGL", ",", "OpenCL" ],
-									"maxclass" : "umenu",
+									"attr" : "depth_processor",
+									"id" : "obj-14",
+									"maxclass" : "attrui",
 									"numinlets" : 1,
-									"numoutlets" : 3,
-									"outlettype" : [ "int", "", "" ],
-									"parameter_enable" : 0,
-									"patching_rect" : [ 415.0, 164.0, 100.0, 22.0 ]
-								}
-
-							}
-, 							{
-								"box" : 								{
-									"id" : "obj-7",
-									"maxclass" : "message",
-									"numinlets" : 2,
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
-									"patching_rect" : [ 415.0, 196.0, 117.0, 22.0 ],
-									"text" : "depth_processor $1"
+									"parameter_enable" : 0,
+									"patching_rect" : [ 331.0, 237.0, 201.0, 22.0 ]
 								}
 
 							}
@@ -87,7 +75,7 @@
 									"maxclass" : "newobj",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 504.0, 290.0, 126.0, 22.0 ],
+									"patching_rect" : [ 406.0, 288.0, 126.0, 22.0 ],
 									"text" : "print dump @popup 1"
 								}
 
@@ -192,22 +180,6 @@
 								}
 
 							}
-, 							{
-								"box" : 								{
-									"border" : 0,
-									"filename" : "helpargs.js",
-									"id" : "obj-4",
-									"ignoreclick" : 1,
-									"jsarguments" : [ "ta.jit.kinect2" ],
-									"maxclass" : "jsui",
-									"numinlets" : 1,
-									"numoutlets" : 1,
-									"outlettype" : [ "" ],
-									"parameter_enable" : 0,
-									"patching_rect" : [ 552.0, 236.0, 100.0, 24.0 ]
-								}
-
-							}
  ],
 						"lines" : [ 							{
 								"patchline" : 								{
@@ -218,8 +190,8 @@
 							}
 , 							{
 								"patchline" : 								{
-									"destination" : [ "obj-7", 0 ],
-									"source" : [ "obj-10", 0 ]
+									"destination" : [ "obj-5", 0 ],
+									"source" : [ "obj-14", 0 ]
 								}
 
 							}
@@ -248,14 +220,6 @@
 								"patchline" : 								{
 									"destination" : [ "obj-1", 0 ],
 									"source" : [ "obj-6", 0 ]
-								}
-
-							}
-, 							{
-								"patchline" : 								{
-									"destination" : [ "obj-5", 0 ],
-									"midpoints" : [ 424.5, 226.5, 167.5, 226.5 ],
-									"source" : [ "obj-7", 0 ]
 								}
 
 							}
@@ -340,12 +304,6 @@
  ],
 		"lines" : [  ],
 		"dependency_cache" : [ 			{
-				"name" : "helpargs.js",
-				"bootpath" : "C74:/help/resources",
-				"type" : "TEXT",
-				"implicit" : 1
-			}
-, 			{
 				"name" : "helpdetails.js",
 				"bootpath" : "C74:/help/resources",
 				"type" : "TEXT",

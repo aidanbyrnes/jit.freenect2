@@ -17,6 +17,7 @@ set_target_properties(jit.freenect2 PROPERTIES
 )
 
 # Add libfreenect2
+OPTION(BUILD_SHARED_LIBS "Build shared (ON) or static (OFF) libraries" OFF)
 OPTION(BUILD_EXAMPLES "Build examples" OFF)
 OPTION(ENABLE_CXX11 "Enable C++11 support" ON)
 add_subdirectory(source/libfreenect2)

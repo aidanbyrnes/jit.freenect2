@@ -27,18 +27,6 @@ typedef struct _jit_freenect2 {
 
     kinect_wrapper *kinect;
 
-    /*
-     
-     AB: all of this now exists in the kinect_wrapper class
-     
-    libfreenect2::Freenect2 freenect2;
-    libfreenect2::Registration *registration; // AB: declare registration
-    libfreenect2::Freenect2Device *device; // TA: declare freenect2 device
-    libfreenect2::PacketPipeline *pipeline; // TA: declare packet pipeline
-    libfreenect2::SyncMultiFrameListener *listener; //TA: depth frame listener
-    libfreenect2::FrameMap *frame_map; // TA: frame map (contains all frames: depth, rgb, etc...)
-    t_bool isOpen;
-    */
 } t_jit_freenect2;
 
 
@@ -86,6 +74,9 @@ t_jit_err jit_freenect2_init(void)
                                           attrflags,
                                           (method)NULL, (method)NULL,
                                           calcoffset(t_jit_freenect2, depth_processor));
+    object_addattr_parse(attr, "label", _jit_sym_symbol, 0, "\"Depth processor\"");
+    object_addattr_parse(attr, "style", _jit_sym_symbol, 0, "enumindex");
+    object_addattr_parse(attr, "enumvals", _jit_sym_symbol, 0, "CPU OpenGL OpenCL");
     
     jit_class_addattr(s_jit_freenect2_class, attr);
     
@@ -120,22 +111,11 @@ t_jit_freenect2 *jit_freenect2_new(void)
 void jit_freenect2_free(t_jit_freenect2 *x)
 {
     post("closing device...");
-    if (x->kinect->isOpen == false) {
-        return; // quit close method if no device is open
+    
+    if(x->kinect != NULL){
+        x->kinect->close();
+        delete x->kinect;
     }
-    
-    x->kinect->close();
-    x->kinect->release();
-    
-    delete x->kinect;
-    /*x->device->stop();
-    x->device->close();
-    
-    x->listener->release(*x->frame_map);
-    x->listener = NULL;
-    x->frame_map = NULL;
-    x->device = NULL;
-    x->pipeline = NULL;*/
 }
 
 /************************************************************************************/
@@ -154,12 +134,13 @@ void jit_freenect2_open(t_jit_freenect2 *x){
 //TA: close kinect device
 void jit_freenect2_close(t_jit_freenect2 *x){
     post("closing device...");
-    if (x->kinect->isOpen == false) {
+    /*if (x->kinect->isOpen == false) {
         return; // quit close method if no device is open
-    }
+    }*/
     
-    x->kinect->close();
-    //x->kinect->release();
+    if(x->kinect){
+        x->kinect->close();
+    }
     
     post("device closed");
 }

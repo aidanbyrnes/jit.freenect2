@@ -123,10 +123,10 @@ void max_jit_freenect2_outputmatrix(t_max_jit_freenect2 *x)
     t_jit_err err;
     
     if (mop) { //always output
-        if (err=(t_jit_err)jit_object_method(max_jit_obex_jitob_get(x),
-                                             _jit_sym_matrix_calc,
-                                             jit_object_method(mop,_jit_sym_getinputlist),
-                                             jit_object_method(mop,_jit_sym_getoutputlist)))
+        if ((err=(t_jit_err)jit_object_method(max_jit_obex_jitob_get(x),
+                                              _jit_sym_matrix_calc,
+                                              jit_object_method(mop,_jit_sym_getinputlist),
+                                              jit_object_method(mop,_jit_sym_getoutputlist))))
         {
             jit_error_code(x,err);
         }
@@ -145,10 +145,10 @@ void max_jit_freenect2_assist(t_max_jit_freenect2 *x, void *b, long msg, long ar
     if (msg == ASSIST_INLET) { // inlet assist
         // add inlet assist here
     }
-    else if(msg == ASSIST_OUTLET){ // outlet assist
+    else{ // outlet assist
         switch (arg) {
             case 0:
-                sprintf(s, "(matrix) depth");
+                sprintf(s, "(matrix) pointcloud");
                 break;
             case 1:
                 sprintf(s, "(matrix) rgb");
