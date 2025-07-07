@@ -9,6 +9,7 @@ include_directories(
 	"${MAX_SDK_MSP_INCLUDES}"
 	"${MAX_SDK_JIT_INCLUDES}"
 	"${CMAKE_CURRENT_SOURCE_DIR}/../libfreenect2/include"
+	"${CMAKE_CURRENT_SOURCE_DIR}/../libfreenect2/include/internal"
 	"${CMAKE_BINARY_DIR}/source/libfreenect2"
 )
 

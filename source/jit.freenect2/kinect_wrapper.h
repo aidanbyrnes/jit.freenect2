@@ -4,6 +4,8 @@
 #include <libfreenect2/frame_listener_impl.h>
 #include <libfreenect2/registration.h>
 #include <libfreenect2/packet_pipeline.h>
+#include <internal/libfreenect2/depth_packet_processor.h>
+//#include "libfreenect2/depth_packet_processor.h"
 
 #ifndef __KINECT_WRAPPER_H__
 #define __KINECT_WRAPPER_H__
@@ -41,6 +43,7 @@ public:
     libfreenect2::Frame registered = libfreenect2::Frame(512, 424, 4);
     
     bool open(long depth_pipeline /* 0-CPU, 1-OpenGL, 2-OpenCL */);
+    void setMaxDepth(float m);
     bool hasNewFrames();
     libfreenect2::FrameMap getframes();
     libfreenect2::Frame* frame(FRAMETYPE type);
@@ -55,6 +58,7 @@ private:
     libfreenect2::Freenect2 freenect2;
     libfreenect2::Freenect2Device *device;
     libfreenect2::PacketPipeline *pipeline;
+    libfreenect2::DepthPacketProcessor::Config config;
     libfreenect2::Registration *registration;
     CustomFrameListener listener;
     libfreenect2::FrameMap frames;

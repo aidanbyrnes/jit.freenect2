@@ -32,6 +32,7 @@ bool CustomFrameListener::onNewFrame(libfreenect2::Frame::Type type, libfreenect
 kinect_wrapper::kinect_wrapper() : listener(libfreenect2::Frame::Color | libfreenect2::Frame::Depth){
     device = nullptr;
     pipeline = nullptr;
+    config.MaxDepth = 4.5f;
     registration = nullptr;
     isOpen = false;
 }
@@ -70,6 +71,9 @@ bool kinect_wrapper::open(long depth_pipeline=0)
             break;
     }
     
+    libfreenect2::DepthPacketProcessor* depthProcessor = pipeline->getDepthPacketProcessor();
+    depthProcessor->setConfiguration(config);
+    
     device = freenect2.openDefaultDevice(pipeline);
     
     if(device == 0)
@@ -93,6 +97,14 @@ bool kinect_wrapper::open(long depth_pipeline=0)
     isOpen = true;
     post("Device is ready");
     return isOpen;
+}
+
+void kinect_wrapper::setMaxDepth(float m){
+    config.MaxDepth = m;
+    
+    if(!pipeline){return;}
+    libfreenect2::DepthPacketProcessor* depthProcessor = pipeline->getDepthPacketProcessor();
+    depthProcessor->setConfiguration(config);
 }
 
 bool kinect_wrapper::hasNewFrames(){
