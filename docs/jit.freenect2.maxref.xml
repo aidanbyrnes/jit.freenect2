@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<?xml-stylesheet href="./c74ref.xsl" type="text/xsl"?>
+
+<c74object name="my.jit.delay">
+
+<digest>
+    Get data from a Kinect v2
+</digest>
+​
+<description>
+	Get pointcloud and color data from a Kinect v2.
+</description>
+
+<outletlist>
+    <outlet id="0" type="matrix">
+        <digest>matrix: pointcloud</digest>
+    </outlet>
+    <outlet id="1" type="matrix">
+        <digest>matrix: color</digest>
+    </outlet>
+</outletlist>
+
+<methodlist>
+    <method name="open">
+        <digest>
+            Open device
+        </digest>
+        <description>
+            Open device.
+        </description>
+    </method>
+    <method name="close">
+        <digest>
+            Close device
+        </digest>
+        <description>
+            Close device.
+        </description>
+    </method>
+    <method name="bang">
+        <digest>
+            Output current frame
+        </digest>
+        <description>
+            Output current frame.
+        </description>
+    </method>
+    <method name="start">
+        <digest>
+            Start automatic output
+        </digest>
+        <description>
+            Start automatic output.
+        </description>
+    </method>
+    <method name="stop">
+        <digest>
+            Stop automatic output
+        </digest>
+        <description>
+            Stop automatic output.
+        </description>
+    </method>
+</methodlist>
+
+<attributelist>
+    <attribute name='depth_processor' get='1' set='1' type='int' size='1' >
+        <digest>Set depth processing pipeline</digest>
+        <description>Set depth processing pipeline (default=0) Supported pipelines include: 0 = CPU 1 = OpenGL 2 = OpenCL</description>
+    </attribute>
+    <attribute name='max_depth' get='1' set='1' type='float' size='1' >
+        <digest>Set pointcloud maximum depth</digest>
+        <description>Set pointcloud maximum depth in meters (default=4.5)</description>
+    </attribute>
+</attributelist>
+
+</c74object>

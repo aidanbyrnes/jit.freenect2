@@ -2,34 +2,29 @@
 #include "kinect_wrapper.h"
 
 CustomFrameListener::CustomFrameListener(unsigned int frame_types)
-    : libfreenect2::SyncMultiFrameListener(frame_types), callback_function(nullptr), callback_user_data(nullptr)
-{
+    : libfreenect2::SyncMultiFrameListener(frame_types), callback_function(nullptr), callback_user_data(nullptr) {
 }
 
-CustomFrameListener::~CustomFrameListener()
-{
+CustomFrameListener::~CustomFrameListener() {
 }
 
-void CustomFrameListener::setCallback(void (*callback)(void*), void* user_data)
-{
+void CustomFrameListener::setCallback(void (*callback)(void *), void *user_data) {
     callback_function = callback;
     callback_user_data = user_data;
 }
 
-bool CustomFrameListener::onNewFrame(libfreenect2::Frame::Type type, libfreenect2::Frame* frame)
-{
-    // Call parent implementation first
+bool CustomFrameListener::onNewFrame(libfreenect2::Frame::Type type, libfreenect2::Frame *frame) {
     bool result = libfreenect2::SyncMultiFrameListener::onNewFrame(type, frame);
-    
-    // If we have both color and depth frames available and a callback is set, trigger it
-    if (callback_function && callback_user_data && hasNewFrame()) {
+
+    // Send as soon as depth frame is available
+    if (callback_function && callback_user_data && type == libfreenect2::Frame::Depth) {
         callback_function(callback_user_data);
     }
-    
+
     return result;
 }
 
-kinect_wrapper::kinect_wrapper() : listener(libfreenect2::Frame::Color | libfreenect2::Frame::Depth){
+kinect_wrapper::kinect_wrapper() : listener(libfreenect2::Frame::Color | libfreenect2::Frame::Depth) {
     device = nullptr;
     pipeline = nullptr;
     config.MaxDepth = 4.5f;
@@ -37,77 +32,76 @@ kinect_wrapper::kinect_wrapper() : listener(libfreenect2::Frame::Color | libfree
     isOpen = false;
 }
 
-kinect_wrapper::~kinect_wrapper()
-{
+kinect_wrapper::~kinect_wrapper() {
     close();
 }
 
-void kinect_wrapper::setFrameCallback(void (*callback)(void*), void* user_data)
-{
+void kinect_wrapper::setFrameCallback(void (*callback)(void *), void *user_data) {
     listener.setCallback(callback, user_data);
 }
 
-bool kinect_wrapper::open(long depth_pipeline=0)
-{
-    if(freenect2.enumerateDevices() == 0)
-    {
+bool kinect_wrapper::open(long depth_pipeline = 0) {
+    if (freenect2.enumerateDevices() == 0) {
         post("Could not find device");
         isOpen = false;
         return isOpen;
     }
-    
+
     switch (depth_pipeline) {
         case 1:
             pipeline = new libfreenect2::OpenGLPacketPipeline();
-            post("using OpenGL packet pipeline");
+            post("Using OpenGL packet pipeline");
             break;
+
         case 2:
             pipeline = new libfreenect2::OpenCLPacketPipeline();
-            post("using OpenCL packet pipeline");
+            post("Using OpenCL packet pipeline");
             break;
+
         default:
             pipeline = new libfreenect2::CpuPacketPipeline();
-            post("using CPU packet pipeline");
+            post("Using CPU packet pipeline");
             break;
     }
-    
-    libfreenect2::DepthPacketProcessor* depthProcessor = pipeline->getDepthPacketProcessor();
+
+    libfreenect2::DepthPacketProcessor *depthProcessor = pipeline->getDepthPacketProcessor();
     depthProcessor->setConfiguration(config);
-    
+
     device = freenect2.openDefaultDevice(pipeline);
-    
-    if(device == 0)
-    {
+
+    if (device == 0) {
         post("Could not open device");
         isOpen = false;
         return isOpen;
     }
-    
+
     device->setColorFrameListener(&listener);
     device->setIrAndDepthFrameListener(&listener);
-    
-    if (!device->start())
-    {
+
+    if (!device->start()) {
         post("Could not start device");
         isOpen = false;
         return isOpen;
     }
-    
+
     registration = new libfreenect2::Registration(device->getIrCameraParams(), device->getColorCameraParams());
     isOpen = true;
     post("Device is ready");
     return isOpen;
 }
 
-void kinect_wrapper::setMaxDepth(float m){
+void kinect_wrapper::setMaxDepth(float m) {
     config.MaxDepth = m;
-    
-    if(!pipeline){return;}
-    libfreenect2::DepthPacketProcessor* depthProcessor = pipeline->getDepthPacketProcessor();
+
+    if (!pipeline) {
+        return;
+    }
+
+    libfreenect2::DepthPacketProcessor *depthProcessor = pipeline->getDepthPacketProcessor();
     depthProcessor->setConfiguration(config);
 }
 
-bool kinect_wrapper::hasNewFrames(){
+bool kinect_wrapper::hasNewFrames() {
     return listener.hasNewFrame();
 }
 
@@ -116,21 +110,21 @@ libfreenect2::FrameMap kinect_wrapper::getframes() {
     return frames;
 }
 
-libfreenect2::Frame* kinect_wrapper::frame(FRAMETYPE type) {
-    switch (type)
-    {
+libfreenect2::Frame * kinect_wrapper::frame(FRAMETYPE type) {
+    switch (type) {
         case Color:
             return frames[libfreenect2::Frame::Color];
+
         case Depth:
             return frames[libfreenect2::Frame::Depth];
     }
 }
 
-void kinect_wrapper::registerFrames(){
+void kinect_wrapper::registerFrames() {
     registration->apply(frames[libfreenect2::Frame::Color], frames[libfreenect2::Frame::Depth], &undistorted, &registered);
 }
 
-void kinect_wrapper::getPoint3D(int r, int c, float &x, float &y, float &z){
+void kinect_wrapper::getPoint3D(int r, int c, float &x, float &y, float &z) {
     registration->getPointXYZ(&undistorted, r, c, x, y, z);
 }
 
@@ -140,14 +134,13 @@ void kinect_wrapper::release() {
 
 void kinect_wrapper::close() {
     setFrameCallback(nullptr, nullptr);
-    
-    if (isOpen)
-    {
+
+    if (isOpen) {
         device->stop();
         device->close();
         isOpen = false;
     }
-    
+
     if (registration) {
         delete registration;
         registration = nullptr;

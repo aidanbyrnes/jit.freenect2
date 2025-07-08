@@ -20,13 +20,12 @@ class CustomFrameListener : public libfreenect2::SyncMultiFrameListener
 public:
     CustomFrameListener(unsigned int frame_types);
     virtual ~CustomFrameListener();
-    
+
     // Set a callback function to be called on new frames
-    void setCallback(void (*callback)(void*), void* user_data);
-    
+    void setCallback(void (*callback)(void *), void *user_data);
+
     // Override onNewFrame to trigger callback
-    virtual bool onNewFrame(libfreenect2::Frame::Type type, libfreenect2::Frame* frame) override;
-    
+    virtual bool onNewFrame(libfreenect2::Frame::Type type, libfreenect2::Frame *frame) override;
 private:
     void (*callback_function)(void*);
     void* callback_user_data;
@@ -36,24 +35,23 @@ class kinect_wrapper {
 public:
     kinect_wrapper();
     ~kinect_wrapper();
-    
+
     bool isOpen = false;
-    
+
     libfreenect2::Frame undistorted = libfreenect2::Frame(512, 424, 4);
     libfreenect2::Frame registered = libfreenect2::Frame(512, 424, 4);
-    
+
     bool open(long depth_pipeline /* 0-CPU, 1-OpenGL, 2-OpenCL */);
     void setMaxDepth(float m);
     bool hasNewFrames();
     libfreenect2::FrameMap getframes();
-    libfreenect2::Frame* frame(FRAMETYPE type);
+    libfreenect2::Frame * frame(FRAMETYPE type);
     void registerFrames();
     void getPoint3D(int r, int c, float & x, float & y, float & z);
     void release();
     void close();
-    
-    void setFrameCallback(void (*callback)(void*), void* user_data);
-    
+
+    void setFrameCallback(void (*callback)(void *), void *user_data);
 private:
     libfreenect2::Freenect2 freenect2;
     libfreenect2::Freenect2Device *device;
