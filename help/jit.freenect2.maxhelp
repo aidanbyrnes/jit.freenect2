@@ -10,7 +10,7 @@
 		}
 ,
 		"classnamespace" : "box",
-		"rect" : [ 105.0, 101.0, 641.0, 682.0 ],
+		"rect" : [ 100.0, 100.0, 615.0, 682.0 ],
 		"gridsize" : [ 15.0, 15.0 ],
 		"showrootpatcherontab" : 0,
 		"showontab" : 0,
@@ -31,7 +31,7 @@
 						}
 ,
 						"classnamespace" : "box",
-						"rect" : [ 105.0, 127.0, 641.0, 656.0 ],
+						"rect" : [ 100.0, 126.0, 615.0, 656.0 ],
 						"gridsize" : [ 5.0, 5.0 ],
 						"showontab" : 1,
 						"boxes" : [ 							{
@@ -248,8 +248,8 @@
 													"numinlets" : 9,
 													"numoutlets" : 2,
 													"outlettype" : [ "", "" ],
-													"patching_rect" : [ 450.0, 229.0, 319.0, 22.0 ],
-													"text" : "jit.gl.mesh @draw_mode points @poin_mode circle_depth"
+													"patching_rect" : [ 450.0, 229.0, 322.0, 22.0 ],
+													"text" : "jit.gl.mesh @draw_mode points @point_mode circle_depth"
 												}
 
 											}
@@ -430,6 +430,7 @@
 						"lines" : [ 							{
 								"patchline" : 								{
 									"destination" : [ "obj-5", 0 ],
+									"midpoints" : [ 346.0, 182.0, 112.0, 182.0 ],
 									"source" : [ "obj-14", 0 ]
 								}
 
@@ -444,6 +445,7 @@
 , 							{
 								"patchline" : 								{
 									"destination" : [ "obj-5", 0 ],
+									"midpoints" : [ 210.0, 182.0, 112.0, 182.0 ],
 									"source" : [ "obj-3", 0 ]
 								}
 
@@ -465,6 +467,7 @@
 , 							{
 								"patchline" : 								{
 									"destination" : [ "obj-5", 0 ],
+									"midpoints" : [ 112.0, 182.0, 112.0, 182.0 ],
 									"source" : [ "obj-8", 0 ]
 								}
 
@@ -472,6 +475,7 @@
 , 							{
 								"patchline" : 								{
 									"destination" : [ "obj-5", 0 ],
+									"midpoints" : [ 274.0, 182.0, 112.0, 182.0 ],
 									"source" : [ "obj-9", 0 ]
 								}
 
@@ -525,7 +529,7 @@
 						}
 ,
 						"classnamespace" : "box",
-						"rect" : [ 0.0, 26.0, 641.0, 656.0 ],
+						"rect" : [ 0.0, 26.0, 615.0, 656.0 ],
 						"gridsize" : [ 15.0, 15.0 ],
 						"showontab" : 1,
 						"boxes" : [  ],
