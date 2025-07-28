@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <?xml-stylesheet href="./c74ref.xsl" type="text/xsl"?>
 
-<c74object name="my.jit.delay">
+<c74object name="jit.freenect2">
 
 <digest>
     Get data from a Kinect v2
