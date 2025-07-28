@@ -37,6 +37,10 @@ kinect_wrapper::~kinect_wrapper() {
 }
 
 void kinect_wrapper::setFrameCallback(void (*callback)(void *), void *user_data) {
+    if (!isOpen) {
+        return;
+    }
+
     listener.setCallback(callback, user_data);
 }
 
