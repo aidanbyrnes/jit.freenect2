@@ -16,6 +16,7 @@ void CustomFrameListener::setCallback(void (*callback)(void *), void *user_data)
 bool CustomFrameListener::onNewFrame(libfreenect2::Frame::Type type, libfreenect2::Frame *frame) {
     bool result = libfreenect2::SyncMultiFrameListener::onNewFrame(type, frame);
 
+    
     // Send as soon as depth frame is available
     if (callback_function && callback_user_data && type == libfreenect2::Frame::Depth) {
         callback_function(callback_user_data);
@@ -105,6 +106,17 @@ void kinect_wrapper::setMaxDepth(float m) {
     depthProcessor->setConfiguration(config);
 }
 
+void kinect_wrapper::setMinDepth(float m) {
+    config.MinDepth = m;
+
+    if (!pipeline) {
+        return;
+    }
+
+    libfreenect2::DepthPacketProcessor *depthProcessor = pipeline->getDepthPacketProcessor();
+    depthProcessor->setConfiguration(config);
+}
+
 bool kinect_wrapper::hasNewFrames() {
     return listener.hasNewFrame();
 }
@@ -125,7 +137,12 @@ libfreenect2::Frame * kinect_wrapper::frame(FRAMETYPE type) {
 }
 
 void kinect_wrapper::registerFrames() {
-    registration->apply(frames[libfreenect2::Frame::Color], frames[libfreenect2::Frame::Depth], &undistorted, &registered);
+    if(*use_rgb){
+        registration->apply(frames[libfreenect2::Frame::Color], frames[libfreenect2::Frame::Depth], &undistorted, &registered);
+    }
+    else{
+        registration->undistortDepth(frames[libfreenect2::Frame::Depth], &undistorted);
+    }
 }
 
 void kinect_wrapper::getPoint3D(int r, int c, float &x, float &y, float &z) {

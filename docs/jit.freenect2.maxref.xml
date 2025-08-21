@@ -72,6 +72,14 @@
         <digest>Set pointcloud maximum depth</digest>
         <description>Set pointcloud maximum depth in meters (default=4.5)</description>
     </attribute>
+    <attribute name='min_depth' get='1' set='1' type='float' size='1' >
+        <digest>Set pointcloud minimum depth</digest>
+        <description>Set pointcloud minimum depth in meters (default=0.5)</description>
+    </attribute>
+    <attribute name='output_rgb' get='1' set='1' type='int' size='1' >
+        <digest>Output RGB</digest>
+        <description>Register and output RGB frames (default=0)</description>
+    </attribute>
 </attributelist>
 
 </c74object>

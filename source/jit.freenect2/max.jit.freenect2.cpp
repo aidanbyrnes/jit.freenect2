@@ -42,7 +42,7 @@ void ext_main(void *r) {
     max_jit_class_obex_setup(max_class, calcoffset(t_max_jit_freenect2, obex));
 
     jit_class = (t_class *)jit_class_findbyname(gensym("jit_freenect2"));
-
+    max_jit_class_mop_wrap(max_class, jit_class,  MAX_JIT_MOP_FLAGS_OWN_ADAPT);
     max_jit_class_wrap_standard(max_class, jit_class, 0);
 
     class_addmethod(max_class, (method)max_jit_freenect2_outputmatrix, "outputmatrix", A_USURP_LOW, 0);

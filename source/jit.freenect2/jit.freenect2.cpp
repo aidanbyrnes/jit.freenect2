@@ -11,6 +11,8 @@ typedef struct _jit_freenect2 {
     t_object ob;
     long depth_processor;
     float max_depth;
+    float min_depth;
+    long output_rgb;
     kinect_wrapper *kinect;
 } t_jit_freenect2;
 
@@ -27,6 +29,7 @@ kinect_wrapper * jit_freenect2_get_kinect_wrapper(t_jit_freenect2 *x);
 void            jit_freenect2_copy_depthdata(t_jit_freenect2 *x, long dimcount, t_jit_matrix_info *out_minfo, char *bop);
 void            jit_freenect2_copy_rgbdata(t_jit_freenect2 *x, long dimcount, t_jit_matrix_info *out_minfo, char *bop);
 t_jit_err jit_freenect2_max_depth_set(t_jit_freenect2 *x, void *attr, long ac, t_atom *av);
+t_jit_err jit_freenect2_min_depth_set(t_jit_freenect2 *x, void *attr, long ac, t_atom *av);
 END_USING_C_LINKAGE
 
 
@@ -39,6 +42,7 @@ t_jit_err jit_freenect2_init(void) {
     long attrflags = JIT_ATTR_GET_DEFER_LOW | JIT_ATTR_SET_USURP_LOW;
     t_jit_object *attr;
     t_jit_object *mop;
+    t_jit_object *output2;
 
     s_jit_freenect2_class = jit_class_new("jit_freenect2", (method)jit_freenect2_new, (method)jit_freenect2_free, sizeof(t_jit_freenect2), 0);
 
@@ -49,11 +53,26 @@ t_jit_err jit_freenect2_init(void) {
     jit_class_addmethod(s_jit_freenect2_class, (method)jit_freenect2_open, "open", 0);
     jit_class_addmethod(s_jit_freenect2_class, (method)jit_freenect2_close, "close", 0);
     jit_class_addmethod(s_jit_freenect2_class, (method)jit_freenect2_get_kinect_wrapper, "get_kinect_wrapper", A_CANT, 0);
+    
+    //jit_mop_output_nolink(mop, 2);
+    jit_mop_output_nolink(mop, 1);
+    
+    //AB: I'd rather jit_mop_output_nolink would work for this, but it doesn't seem too..
+    //Restricts attributes of the rightmost output matrix
+    output2 = (t_jit_object *)jit_object_method(mop,_jit_sym_getoutput,2);
+    jit_attr_setlong(output2,_jit_sym_minplanecount,4);
+    jit_attr_setlong(output2,_jit_sym_maxplanecount,4);
+    t_atom_long dim[2] = {DEPTH_WIDTH, DEPTH_HEIGHT};
+    jit_attr_setlong_array(output2, _jit_sym_mindim, 2, dim);
+    jit_attr_setlong_array(output2, _jit_sym_maxdim, 2, dim);
+    jit_attr_setlong(output2, _jit_sym_types, 0);
+    jit_attr_setlong(output2, _jit_sym_outputmode, 2);
+    
 
     attr = (t_jit_object *)jit_object_new(_jit_sym_jit_attr_offset,
                                           "depth_processor", _jit_sym_long, attrflags,
                                           (method)NULL, (method)NULL, calcoffset(t_jit_freenect2, depth_processor));
-    object_addattr_parse(attr, "label", _jit_sym_symbol, 0, "\"Depth processor\"");
+    object_addattr_parse(attr, "label", _jit_sym_symbol, 0, "\"Depth Processor\"");
     object_addattr_parse(attr, "style", _jit_sym_symbol, 0, "enumindex");
     object_addattr_parse(attr, "enumvals", _jit_sym_symbol, 0, "CPU OpenGL OpenCL");
     jit_class_addattr(s_jit_freenect2_class, attr);
@@ -61,7 +80,18 @@ t_jit_err jit_freenect2_init(void) {
     attr = (t_jit_object *)jit_object_new(_jit_sym_jit_attr_offset,
                                           "max_depth", _jit_sym_float32, attrflags,
                                           (method)NULL, (method)jit_freenect2_max_depth_set, calcoffset(t_jit_freenect2, max_depth));
-    object_addattr_parse(attr, "label", _jit_sym_symbol, 0, "\"Maximum depth\"");
+    object_addattr_parse(attr, "label", _jit_sym_symbol, 0, "\"Maximum Depth\"");
+    jit_class_addattr(s_jit_freenect2_class, attr);
+    
+    attr = (t_jit_object *)jit_object_new(_jit_sym_jit_attr_offset,
+                                          "min_depth", _jit_sym_float32, attrflags,
+                                          (method)NULL, (method)jit_freenect2_min_depth_set, calcoffset(t_jit_freenect2, min_depth));
+    object_addattr_parse(attr, "label", _jit_sym_symbol, 0, "\"Minimum Depth\"");
+    jit_class_addattr(s_jit_freenect2_class, attr);
+    
+    attr = (t_jit_object *)jit_object_new(_jit_sym_jit_attr_offset, "output_rgb", _jit_sym_long, attrflags, (method)NULL, (method)NULL, calcoffset(t_jit_freenect2, output_rgb));
+    object_addattr_parse(attr, "label", _jit_sym_symbol, 0, "\"Output RGB\"");
+    object_addattr_parse(attr, "style", _jit_sym_symbol, 0, "onoff");
     jit_class_addattr(s_jit_freenect2_class, attr);
 
     jit_class_register(s_jit_freenect2_class);
@@ -78,8 +108,10 @@ t_jit_freenect2 * jit_freenect2_new(void) {
     if (x) {
         x->depth_processor = 1;
         x->max_depth = 4.5f;
+        x->min_depth = 0.5f;
+        x->output_rgb = 0;
         x->kinect = new kinect_wrapper();
-        //x->kinect->setMaxDepth(x->max_depth);
+        x->kinect->use_rgb = &x->output_rgb;
     }
 
     return x;
@@ -105,6 +137,11 @@ void jit_freenect2_open(t_jit_freenect2 *x) {
 t_jit_err jit_freenect2_max_depth_set(t_jit_freenect2 *x, void *attr, long ac, t_atom *av) {
     x->max_depth = atom_getfloat(av);
     x->kinect->setMaxDepth(x->max_depth);
+}
+
+t_jit_err jit_freenect2_min_depth_set(t_jit_freenect2 *x, void *attr, long ac, t_atom *av) {
+    x->min_depth = atom_getfloat(av);
+    x->kinect->setMinDepth(x->min_depth);
 }
 
 kinect_wrapper * jit_freenect2_get_kinect_wrapper(t_jit_freenect2 *x) {
@@ -150,10 +187,11 @@ t_jit_err jit_freenect2_matrix_calc(t_jit_freenect2 *x, void *inputs, void *outp
             err = JIT_ERR_INVALID_OUTPUT; goto out;
         }
 
+        //x->kinect->use_rgb = x->output_rgb;
         x->kinect->getframes();
         x->kinect->registerFrames();
 
-        jit_freenect2_copy_rgbdata(x, rgb_minfo.dimcount, &rgb_minfo, rgb_bp);
+        if(x->output_rgb){ jit_freenect2_copy_rgbdata(x, rgb_minfo.dimcount, &rgb_minfo, rgb_bp); }
         jit_freenect2_copy_depthdata(x, depth_minfo.dimcount, &depth_minfo, depth_bp);
 
         x->kinect->release();

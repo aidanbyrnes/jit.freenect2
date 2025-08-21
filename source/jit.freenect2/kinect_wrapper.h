@@ -37,12 +37,16 @@ public:
     ~kinect_wrapper();
 
     bool isOpen = false;
+    
+    //will point to the value of output_rgb in our Jitter instance
+    long *use_rgb;
 
     libfreenect2::Frame undistorted = libfreenect2::Frame(512, 424, 4);
     libfreenect2::Frame registered = libfreenect2::Frame(512, 424, 4);
 
     bool open(long depth_pipeline /* 0-CPU, 1-OpenGL, 2-OpenCL */);
     void setMaxDepth(float m);
+    void setMinDepth(float m);
     bool hasNewFrames();
     libfreenect2::FrameMap getframes();
     libfreenect2::Frame * frame(FRAMETYPE type);
